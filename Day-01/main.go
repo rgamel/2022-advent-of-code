@@ -9,29 +9,6 @@ import (
 	"strings"
 )
 
-func sumElf(elf string) int {
-	var elfTotal int
-
-	for _, cal := range strings.Split(elf, "\n") {
-		calInt, err := strconv.Atoi(cal)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		elfTotal += calInt
-	}
-
-	return elfTotal
-}
-
-func sum(ints []int) (sum int) {
-	for _, v := range ints {
-		sum += v
-	}
-
-	return sum
-}
-
 func main() {
 	elves := []int{}
 
@@ -41,7 +18,11 @@ func main() {
 	}
 
 	for _, elf := range strings.Split(string(bytes[:]), "\n\n") {
-		elfTotal := sumElf(elf)
+		elfTotal := 0
+		err := sumElf(elf, &elfTotal)
+		if err != nil {
+			log.Fatal(err)
+		}
 		elves = append(elves, elfTotal)
 	}
 
@@ -50,4 +31,22 @@ func main() {
 
 	answer := sum(elves[len(elves)-3:]) // sum last 3 elves
 	fmt.Printf("1b: %d\n", answer)
+}
+
+func sumElf(elf string, elfTotal *int) (err error) {
+	for _, cal := range strings.Split(elf, "\n") {
+		if calInt, err := strconv.Atoi(cal); err != nil {
+			return err
+		} else {
+			*elfTotal += calInt
+		}
+	}
+	return nil
+}
+
+func sum(ints []int) (sum int) {
+	for _, v := range ints {
+		sum += v
+	}
+	return sum
 }
