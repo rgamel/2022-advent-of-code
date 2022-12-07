@@ -13,13 +13,15 @@ func main() {
 	}
 	input := string(bytes)
 	one, two := findUniqueMarker(input, 4), findUniqueMarker(input, 14)
-	fmt.Printf("one: %v\ntwo: %v\n", one, two)
+	fmt.Printf("one: %v\ntwo: %v\n", one, two) // 1912 | 2122
 }
 
 func findUniqueMarker(input string, size int) (index int) {
-	for i := size; i <= len(input); i++ {
-		if isNonRepeating(input[i-size : i]) {
-			return i
+	if len(input) >= size {
+		for i := size; i <= len(input); i++ {
+			if isNonRepeating(input[i-size : i]) {
+				return i
+			}
 		}
 	}
 	return -1
