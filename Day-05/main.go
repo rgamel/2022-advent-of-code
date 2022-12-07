@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+type moveSummary struct {
+	count int
+	from  int
+	to    int
+}
+
+type cratesGrid = map[int][]string
+
 func main() {
 	bytes, err := ioutil.ReadFile("input.txt")
 	if err != nil {
@@ -26,7 +34,7 @@ func main() {
 func partOne(diagram string, moves string) (tops string) {
 	stackMap := parseDiagram(diagram)
 	parsedMoves := parseMoves(moves)
-	applyMovesToGrid(parsedMoves, &stackMap, true)
+	applyMovesToGrid(parsedMoves, stackMap, true)
 
 	return getTopsListFromGrid(stackMap)
 }
@@ -34,25 +42,21 @@ func partOne(diagram string, moves string) (tops string) {
 func partTwo(diagram string, moves string) (tops string) {
 	stackMap := parseDiagram(diagram)
 	parsedMoves := parseMoves(moves)
-	applyMovesToGrid(parsedMoves, &stackMap, false)
+	applyMovesToGrid(parsedMoves, stackMap, false)
 
 	return getTopsListFromGrid(stackMap)
 }
-
-type cratesGrid = map[string][]string
 
 func getTopsListFromGrid(stackMap cratesGrid) (tops string) {
 	cols := sort.IntSlice{}
 
 	for k := range stackMap {
-		if i, err := strconv.Atoi(k); err == nil {
-			cols = append(cols, i)
-		}
+		cols = append(cols, k)
 	}
 	cols.Sort()
 
 	for _, v := range cols {
-		stack := stackMap[fmt.Sprint(v)]
+		stack := stackMap[v]
 		tops += stack[len(stack)-1]
 	}
 
@@ -61,7 +65,7 @@ func getTopsListFromGrid(stackMap cratesGrid) (tops string) {
 
 func parseDiagram(diagram string) (stackMap cratesGrid) {
 	strata := strings.Split(diagram[:], "\n")
-	stackKey := strata[len(strata)-1]
+	stackKey, strata := strata[len(strata)-1], strata[:len(strata)-1]
 
 	keyIndexMap := make(map[string]int)
 	stackMap = make(cratesGrid)
@@ -73,32 +77,32 @@ func parseDiagram(diagram string) (stackMap cratesGrid) {
 	}
 
 	for k := range keyIndexMap {
-		stackMap[k] = make([]string, 0)
+		j, _ := strconv.Atoi(k)
+		stackMap[j] = make([]string, 0)
 	}
 
-	strata = (strata[:len(strata)-1])
 	for i := len(strata) - 1; i >= 0; i-- {
 		for k, v := range keyIndexMap {
 			if string(strata[i][v]) != " " {
-				stackMap[k] = append(stackMap[k], string(strata[i][v]))
+				if k, err := strconv.Atoi(k); err != nil {
+					log.Fatal(err)
+				} else {
+					stackMap[k] = append(stackMap[k], string(strata[i][v]))
+				}
 			}
 		}
 	}
 	return stackMap
 }
 
-type moveMap = map[string]int
-
-func parseMoves(moveList string) (parsedMoves []moveMap) {
-	moves := strings.Split(moveList, "\n")
-
-	for _, move := range moves {
-		parsedMoves = append(parsedMoves, parseMove(move))
+func parseMoves(moveList string) (parsedMoves []moveSummary) {
+	for _, move := range strings.Split(moveList, "\n") {
+		parsedMoves = append(parsedMoves, *parseMove(move))
 	}
 	return parsedMoves
 }
 
-func parseMove(move string) (parsedMove moveMap) {
+func parseMove(move string) *moveSummary {
 	s := strings.Split(move, " ")
 	ints := []int{}
 
@@ -107,19 +111,19 @@ func parseMove(move string) (parsedMove moveMap) {
 			ints = append(ints, val)
 		}
 	}
+	m := moveSummary{count: ints[0], from: ints[1], to: ints[2]}
 
-	return moveMap{"count": ints[0], "from": ints[1], "to": ints[2]}
+	return &m
 }
 
-func applyMovesToGrid(moves []moveMap, stacks *cratesGrid, reverse bool) {
+func applyMovesToGrid(moves []moveSummary, stacks cratesGrid, reverse bool) {
 	for _, move := range moves {
 		applyMoveToGrid(move, stacks, reverse)
 	}
 }
 
-func applyMoveToGrid(move moveMap, stacks *cratesGrid, reverse bool) {
-	s := *stacks
-	crates, fromCol := popN(s[fmt.Sprint(move["from"])], move["count"])
+func applyMoveToGrid(move moveSummary, stacks cratesGrid, reverse bool) {
+	crates, fromCol := popN(stacks[move.from], move.count)
 
 	if reverse {
 		for i, j := 0, len(crates)-1; i < j; i, j = i+1, j-1 {
@@ -127,10 +131,8 @@ func applyMoveToGrid(move moveMap, stacks *cratesGrid, reverse bool) {
 		}
 	}
 
-	s[fmt.Sprint(move["from"])] = fromCol
-	s[fmt.Sprint(move["to"])] = append(s[fmt.Sprint(move["to"])], crates...)
-
-	stacks = &s
+	stacks[move.from] = fromCol
+	stacks[move.to] = append(stacks[move.to], crates...)
 }
 
 func popN(a []string, n int) (x []string, arr []string) {
